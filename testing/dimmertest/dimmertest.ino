@@ -17,6 +17,7 @@ void setup() {
 void loop() {
   float brightness = 25; //brightness in percent
   //meaningful brightness is 12.5 to 100 in 2x steps
+  
   float cycle = 5; //cycle time in milliseconds 
   
   float ontime = brightness / 100 * cycle;
