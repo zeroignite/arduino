@@ -1,7 +1,14 @@
 //nixiecode
 //"Zeroignite" Tenzin Beck, 2013
-//Licsensed under the "do whatever you want" license
+//released into the public domain
 
+
+//=============================
+//handy macros
+//=============================
+
+#define BRIGHTMAX 80 //maxiumum brightness in percent
+#define BRIGHTMIN 0.625 //brightness in percent considered "off"
 
 //=============================
 //initialize pin numbers
@@ -33,7 +40,7 @@ int hourminus = A3; //input pins, UI
 //initialize mux/dimming variables
 //=========================
 
-float brightness = 80; //brightness in percent
+float brightness = BRIGHTMAX; //brightness in percent
 //testing indicates brightness range is <100 to >0.5
 
 float cycle = 4000; //time per numeral in microseconds
@@ -111,11 +118,12 @@ void loop(){
 	float offtime = cycle - ontime; //calculate mux times from brightness
 	//don't feed delayMicroseconds() 0 --- results in 17ms delay ---arduino bug
 	
+
 	int x;
 
-	for( x=1; x < 100; x++){
+	for( x=1; x < 20; x++){
 
-		if(brightness > 0){ //only display if brightness >10, i.e display is on
+		if(brightness > 1){ //only display if brightness >10, i.e display is on
 
 			dec_to_bcd(hours10); //send out binary of hours10 value on pins a-d
 			digitalWrite(h10mux, 1); // turn on h10 tube
@@ -142,5 +150,25 @@ void loop(){
 			delayMicroseconds(offtime);
 		}	
 	}
+
+	//=====================================
+	//poll brightness buttons for input
+	//=====================================
+
+	if(digitalRead(brightup) == 0) { //buttons pull input low
+		brightness = brightness * 2; //each increase doubles brightness
+	}
+
+	if(digitalRead(brightdown) == 0) {
+		brightness = brightness / 2; //each incriment halves brightness
+	}
+
+	if(brightness > BRIGHTMAX) {
+		brightness = BRIGHTMAX; //cap brightness max
+	}
+
+	if(brightness < BRIGHTMIN) {
+		brightness = BRIGHTMIN; //cap brightness min at "off"
+	}	
 
 }
