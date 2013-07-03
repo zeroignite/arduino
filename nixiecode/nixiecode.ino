@@ -10,6 +10,11 @@
 #define BRIGHTMAX 80 //maxiumum brightness in percent
 #define BRIGHTMIN 0.625 //brightness in percent considered "off"
 
+#define BUF_LEN 15 //maximum amount of serial buffer to parse
+
+#define ASCII_CR    ('\r')
+#define ASCII_LF    ('\n')
+
 //=============================
 //initialize pin numbers
 //=============================
@@ -36,14 +41,20 @@ int hourminus = A3; //input pins, UI
 //Vin takes 12v DC
 //RX and TX pins connect to GPS module, serial
 
-//=======================
+//=============================
 //initialize mux/dimming variables
-//=========================
+//=============================
 
 float brightness = BRIGHTMAX; //brightness in percent
 //testing indicates brightness range is <100 to >0.5
 
 float cycle = 4000; //time per numeral in microseconds
+
+//==============================
+//create buffer array
+//==============================
+
+char buf[BUF_LEN + 2]; //buffer is array of characters
 
 //==============================
 //setup function, runs once
@@ -91,6 +102,39 @@ void dec_to_bcd(int decimal) { //takes an int 0-9 and puts binary out on corresp
 	//the above block sets pins bcd a-d as the corresponding value of bcdbyte
 }
 
+//==================================
+//fill buffer function
+//==================================
+
+void read_buffer( char *inbuf, int len ){
+
+    int i;
+    char c;
+
+    memset( inbuf, 0, len );
+
+    for( i = 0; i < len; ){
+
+        if( Serial.available() ){
+            c = Serial.read();
+
+            if( (c == ASCII_CR) || (c == ASCII_LF) )
+                break;
+
+            inbuf[ i ] = c;
+            i++;
+        }
+    }
+}
+
+//==================================
+//buffer parser
+//==================================
+
+void parse(char *line_buf, int len){
+	
+}
+
 
 //==================================
 //main loop, repeats inf times
@@ -102,12 +146,24 @@ void loop(){
 	int minutes10; //minutes-10 value
 	int minutes00; //minutes value
 
+	//==============================
+	//read and parse serial buffer
+	//==============================
+
+	memset( buf, 0, sizeof(buf) ); //zero out buf
+
+	read_buffer( buf, BUF_LEN ); // fill the buffer
+
+	parse( buf, BUF_LEN ); //parse the buffer
+
+	//------------------------------------
 	//testing -- hardcode numeral values 
-	hours10 = 1;
-	hours00 = 2;
-	minutes10 = 3;
-	minutes00 = 4;
+	//hours10 = 1;
+	//hours00 = 2;
+	//minutes10 = 3;
+	//minutes00 = 4;
 	//end hardcode test block
+	//------------------------------------
 
 
 	//================================
