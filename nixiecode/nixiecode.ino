@@ -33,10 +33,10 @@ int hourminus = A3; //input pins, UI
 //initialize mux/dimming variables
 //=========================
 
-float brightness = 100; //brightness in percent
-//earier testing indicates brightness range is 100 to 12.5
+float brightness = 80; //brightness in percent
+//testing indicates brightness range is <100 to >0.5
 
-float cycle = 2; //time per numeral in milliseconds
+float cycle = 4000; //time per numeral in microseconds
 
 //==============================
 //setup function, runs once
@@ -109,36 +109,37 @@ void loop(){
 
 	float ontime = brightness / 100 * cycle; 
 	float offtime = cycle - ontime; //calculate mux times from brightness
-
+	//don't feed delayMicroseconds() 0 --- results in 17ms delay ---arduino bug
+	
 	int x;
 
 	for( x=1; x < 100; x++){
 
-		if(brightness > 10){ //only display if brightness >10, i.e display is on
+		if(brightness > 0){ //only display if brightness >10, i.e display is on
 
 			dec_to_bcd(hours10); //send out binary of hours10 value on pins a-d
 			digitalWrite(h10mux, 1); // turn on h10 tube
-			delay(ontime); //hold tube on for ontime ms
+			delayMicroseconds(ontime); //hold tube on for ontime us
 			digitalWrite(h10mux, 0); //turn off tube h10
-			delay(offtime); //wait offtime ms before moving to next tube
+			delayMicroseconds(offtime); //wait offtime us before moving to next tube
 
 			dec_to_bcd(hours00); //same code as above block for each tube -- rinse, repeat
 			digitalWrite(h00mux, 1); 
-			delay(ontime);
+			delayMicroseconds(ontime);
 			digitalWrite(h00mux, 0);
-			delay(offtime);
+			delayMicroseconds(offtime);
 
 			dec_to_bcd(minutes10);
 			digitalWrite(m10mux, 1);
-			delay(ontime);
+			delayMicroseconds(ontime);
 			digitalWrite(m10mux, 0);
-			delay(offtime);
+			delayMicroseconds(offtime);
 
 			dec_to_bcd(minutes00);
 			digitalWrite(m00mux, 1);
-			delay(ontime);
+			delayMicroseconds(ontime);
 			digitalWrite(m00mux, 0);
-			delay(offtime);
+			delayMicroseconds(offtime);
 		}	
 	}
 
