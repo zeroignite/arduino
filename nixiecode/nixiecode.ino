@@ -10,10 +10,12 @@
 #define BRIGHTMAX 80 //maxiumum brightness in percent
 #define BRIGHTMIN 0.625 //brightness in percent considered "off"
 
-#define BUF_LEN 15 //maximum amount of serial buffer to parse
+#define CR ('\r')
+#define LF ('\n')
 
-#define ASCII_CR    ('\r')
-#define ASCII_LF    ('\n')
+#define ASCII_BOTTOM 0x20 // Lower end of ASCII printable (space)
+
+#define ASCII_0 48 //ascii 0 is used to convert chars to decimal ints
 
 //=============================
 //initialize pin numbers
@@ -39,7 +41,7 @@ int hourplus = A2;
 int hourminus = A3; //input pins, UI
 
 //Vin takes 12v DC
-//RX and TX pins connect to GPS module, serial
+//RX and TX pins connect to GPS module, Serial1
 
 //=============================
 //initialize mux/dimming variables
@@ -48,13 +50,59 @@ int hourminus = A3; //input pins, UI
 float brightness = BRIGHTMAX; //brightness in percent
 //testing indicates brightness range is <100 to >0.5
 
-float cycle = 4000; //time per numeral in microseconds
+float cycle = 2000; //time per numeral in microseconds
+
+//=============================
+//initialize time variables
+//=============================
+
+int hours10 = 0; //hours-10 value
+int hours00 = 0; //hours value
+int minutes10 = 0; //minutes-10 value
+int minutes00 = 0; //minutes value
+
+int timezone = 0; //timezone offset
 
 //==============================
-//create buffer array
+//initialize nmea input/parse stuff
 //==============================
 
-char buf[BUF_LEN + 2]; //buffer is array of characters
+char want_kind[] = "$GPRMC,"; //the sentence we want is prefixed by #GPRMC,
+
+int want_idx = 0; //want_idx is index of what we're checking in Serial1 buffer
+
+int raw_time[4]; //array of raw time string
+
+//==============================
+//grab_nmea looks for the desired sentence and sticks the raw time into array
+//==============================
+void grab_nmea(){
+
+	Serial.print("in grab_nmea");
+
+	if(Serial1.available()){
+      Serial.print(Serial1.peek());
+        if(Serial1.read() == want_kind[want_idx]){ // if idx = 0, want_kind[idx] = $
+            want_idx++; //if we get $, we go on, looking for G, etc...
+        	}
+
+        else{ // the sentence we are going to get is NOT what we want
+
+            want_idx = 0; //reset index
+            while(Serial1.read() > ASCII_BOTTOM );
+            // eat anything until we get less than the lower end of ASCII's printable region
+        }
+       
+        if(want_idx == sizeof(want_kind)-1){ // we have the sentence we want
+            want_idx = 0; //reset index
+            Serial.print("----");
+
+           	for(int i; i < 4; i++){
+           		raw_time[i] = Serial1.read() - ASCII_0; //fill array with next 4 chars, rawtime
+           }            
+        }
+    }
+}
 
 //==============================
 //setup function, runs once
@@ -84,6 +132,10 @@ void setup(){
     TCCR1B = TCCR1B & 0b11111000 | 0x01 ; //set fuse for 31KHz frequency
     
     analogWrite(pwm, 168); //turn on the FET pwm
+
+    Serial1.begin(9600); // opens Serial1 port, sets data rate to 9600 bps
+
+    Serial.begin(9600);
 }
 
 
@@ -102,59 +154,29 @@ void dec_to_bcd(int decimal) { //takes an int 0-9 and puts binary out on corresp
 	//the above block sets pins bcd a-d as the corresponding value of bcdbyte
 }
 
-//==================================
-//fill buffer function
-//==================================
-
-void read_buffer( char *inbuf, int len ){
-
-    int i;
-    char c;
-
-    memset( inbuf, 0, len );
-
-    for( i = 0; i < len; ){
-
-        if( Serial.available() ){
-            c = Serial.read();
-
-            if( (c == ASCII_CR) || (c == ASCII_LF) )
-                break;
-
-            inbuf[ i ] = c;
-            i++;
-        }
-    }
-}
-
-//==================================
-//buffer parser
-//==================================
-
-void parse(char *line_buf, int len){
-	
-}
-
 
 //==================================
 //main loop, repeats inf times
 //==================================
 void loop(){
 
-	int hours10; //hours-10 value
-	int hours00; //hours value
-	int minutes10; //minutes-10 value
-	int minutes00; //minutes value
+	grab_nmea(); //grab incoming nmea GPRMC sentence
 
-	//==============================
-	//read and parse serial buffer
-	//==============================
+	//===============================
+	//pull individual times out of the raw_time array
+	//===============================
 
-	memset( buf, 0, sizeof(buf) ); //zero out buf
+	int workinghours = raw_time[0] * 10 + raw_time[1];
+	//the above line creates an int by pulling out the hours chars from array,
+	//turning them into ints, and adding them to produce 24H int. 
 
-	read_buffer( buf, BUF_LEN ); // fill the buffer
+	workinghours = workinghours + timezone; //adjsut for timezone
 
-	parse( buf, BUF_LEN ); //parse the buffer
+	hours10 = workinghours % 10; //get the tens value out of working hours
+	hours00 = workinghours / 10; //get the ones value out of working hours, int division
+
+	minutes10 = raw_time[2]; 
+	minutes00 = raw_time[3];
 
 	//------------------------------------
 	//testing -- hardcode numeral values 
