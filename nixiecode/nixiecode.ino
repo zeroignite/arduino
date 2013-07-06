@@ -112,9 +112,7 @@ void setup(){
 //==============================
 void grab_nmea() {
 
-    want_idx = 0;
-
-    if (Serial1.available() > 50) {
+    //if (Serial1.available() > 60) {
         //Serial.print("we has serial! \n"); //debug
         //digitalWrite(led0, 1); //debug
 
@@ -144,9 +142,10 @@ void grab_nmea() {
                 //}
             }
        
-            if (want_idx == sizeof(want_kind)-1) { // we have the sentence we want
+            if (want_idx == sizeof(want_kind)-1 && Serial1.available() > 5) { 
+                // we have the sentence we want, and there' enough serial left to get the time
                 want_idx = 0; // reset index
-                //Serial.print("RMC found! Party time! \n");
+                //Serial.print("RMC found! Party time! \n"); //debug
 
                 for (int i = 0; i < 4;) {
                     raw_time[i] = Serial1.read() - ASCII_0; // fill array with next 4 chars, rawtime
@@ -158,7 +157,7 @@ void grab_nmea() {
                 }
             }         
         }
-    }
+    //}
 }
 
 
