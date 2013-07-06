@@ -2,18 +2,12 @@
 // "Zeroignite" Tenzin Beck, 2013
 // released into the public domain
 
-
 //=============================
 // handy macros
 //=============================
 
 #define BRIGHTMAX 80 // maxiumum brightness in percent
 #define BRIGHTMIN 0.625 // brightness in percent considered "off"
-
-#define CR ('\r')
-#define LF ('\n')
-
-#define ASCII_BOTTOM 0x20 // Lower end of ASCII printable (space)
 
 #define ASCII_0 48 // ascii 0 is used to convert chars to decimal ints
 
@@ -103,8 +97,6 @@ void setup(){
     analogWrite(pwm, 168); // turn on the FET pwm
 
     Serial1.begin(9600); // opens Serial1 port, sets data rate to 9600 bps
-
-    Serial.begin(9600);
 }
 
 //==============================
@@ -112,52 +104,27 @@ void setup(){
 //==============================
 void grab_nmea() {
 
-    //if (Serial1.available() > 60) {
-        //Serial.print("we has serial! \n"); //debug
-        //digitalWrite(led0, 1); //debug
+    while(Serial1.available()) {
 
-        while(Serial1.available()) {
-
-            if (Serial1.read() == want_kind[want_idx]) { // if idx = 0, want_kind[idx] = $
-                
-                //char testing_good = want_kind[want_idx]; //debug
-                //Serial.print(testing_good); //debug
-                //Serial.print("    ...good \n"); //debug
-
-                want_idx++; // if we get $, we go on, looking for G, etc...
-            }
-
-            else { // the sentence we are going to get is NOT what we want
-                
-                //char testing_bad = Serial1.read(); //debug
-                //Serial.print(testing_bad); //debug
-                //Serial.print("    ...bad \n"); //debug
-
-                want_idx = 0; // reset index
-
-
-                //while (Serial1.read() > ASCII_BOTTOM) {
-                    // eat anything until we get less than the lower end of ASCII's printable regions
-                    //Serial.print("bad \n"); //debug
-                //}
-            }
-       
-            if (want_idx == sizeof(want_kind)-1 && Serial1.available() > 5) { 
-                // we have the sentence we want, and there' enough serial left to get the time
-                want_idx = 0; // reset index
-                //Serial.print("RMC found! Party time! \n"); //debug
-
-                for (int i = 0; i < 4;) {
-                    raw_time[i] = Serial1.read() - ASCII_0; // fill array with next 4 chars, rawtime
-                    
-                    Serial.print("filling time array..."); //debug
-                    Serial.print(raw_time[i]); //debug
-                    Serial.print("\n"); //debug
-                    i++;
-                }
-            }         
+        if (Serial1.read() == want_kind[want_idx]) { // if idx = 0, want_kind[idx] = $
+            want_idx++; // if we get $, we go on, looking for G, etc...
         }
-    //}
+
+        else { // the sentence we are going to get is NOT what we want
+            want_idx = 0; // reset index
+        }
+   
+        if (want_idx == sizeof(want_kind)-1 && Serial1.available() > 4) { 
+        // we have the sentence we want, and there' enough serial left to get the time
+            want_idx = 0; // reset index
+
+            for (int i = 0; i < 4;) {
+                raw_time[i] = Serial1.read() - ASCII_0; // fill raw_time array with next 4 chars,
+                //subtracting ASCII_0 converts chars to ints
+                i++;
+            }
+        }         
+    }
 }
 
 
@@ -189,10 +156,17 @@ void loop(){
     //===============================
 
     int workinghours = raw_time[0] * 10 + raw_time[1];
-    // the above line creates an int by pulling out the hours chars from array,
+    // the above line creates an int by pulling out the hours ints from array,
     // turning them into ints, and adding them to produce 24H int. 
 
     workinghours = workinghours + timezone; // adjsut for timezone
+
+    if(workinghours  < 0) { //avoid negative time, rollover to before midnight
+        workinghours = workinghours + 24;
+    }
+    else if(workinghours > 23) {
+        workinghours = 0;
+    }
 
     hours10 = workinghours / 10; // get the tens value out of working hours, int division
     hours00 = workinghours % 10; // get the ones value out of working hours
@@ -201,7 +175,7 @@ void loop(){
     minutes00 = raw_time[3];
 
     // ------------------------------------
-    // testing -- hardcode numeral values 
+    // fallback testing -- hardcode numeral values 
     // hours10 = 1;
     // hours00 = 2;
     // minutes10 = 3;
@@ -209,14 +183,13 @@ void loop(){
     // end hardcode test block
     // ------------------------------------
 
-
     //================================
     // display the numerals!
     //================================
 
     float ontime = brightness / 100 * cycle; 
     float offtime = cycle - ontime; // calculate mux times from brightness
-    // don't feed delayMicroseconds() 0 --- results in 17ms delay ---arduino bug
+    // don't feed delayMicroseconds() 0 --- results in 17ms delay --- arduino bug
 
     for (int x = 1; x < 20; x++) {
 
@@ -252,15 +225,42 @@ void loop(){
     // poll brightness buttons for input
     //=====================================
 
-    if (digitalRead(brightup) == 0)
-        brightness = brightness * 2;
+    if (digitalRead(brightup) == 0){
+        brightness = brightness * 2; //each brightness step is a factor of two duty cycle
+    }
 
-    if (digitalRead(brightdown) == 0)
+    if (digitalRead(brightdown) == 0){
         brightness = brightness / 2;
+    }
 
-    if (brightness > BRIGHTMAX)
-        brightness = BRIGHTMAX;
+    if (brightness > BRIGHTMAX){
+        brightness = BRIGHTMAX; //cap upperlower bound on brightness
+    }
+    
+    if (brightness < BRIGHTMIN){
+        brightness = BRIGHTMIN; //cap lower bound on brightness
+    }
 
-    if (brightness < BRIGHTMIN)
-        brightness = BRIGHTMIN;
+    //====================================
+    //poll timzeone buttons for input
+    //====================================
+
+    if (digitalRead(hourplus) == 0){ //adjust timezone via UI buttons
+        timezone = timezone + 1;
+    }
+
+    if (digitalRead(hourminus) == 0){
+        timezone = timezone - 1;
+    }
+
+    timezone == timezone + 1;
+
+    if (timezone == 13){ //timezone rollover
+        timezone = -12;
+    }
+
+    if (timezone == -13){
+        timezone = 12;
+    }   
+
 }
