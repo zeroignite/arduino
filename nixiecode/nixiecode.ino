@@ -35,10 +35,10 @@ int h00mux = 8;
 int m10mux = 11;
 int m00mux = 12;
 
-int brightup = A0;
+int brightup = A0; // input pins, UI
 int brightdown = A1;
 int hourplus = A2;
-int hourminus = A3; // input pins, UI
+int hourminus = A3; 
 
 // Vin takes 12v DC
 // RX and TX pins connect to GPS module, Serial1
@@ -74,38 +74,6 @@ int want_idx = 0; // want_idx is index of what we're checking in Serial1 buffer
 int raw_time[4]; // array of raw time string
 
 //==============================
-// grab_nmea looks for the desired sentence and sticks the raw time into array
-//==============================
-void grab_nmea() {
-
-    Serial.print("in grab_nmea");
-
-    if (Serial1.available()) {
-        Serial.print(Serial1.peek());
-
-        if (Serial1.read() == want_kind[want_idx]) { // if idx = 0, want_kind[idx] = $
-            want_idx++; // if we get $, we go on, looking for G, etc...
-        }
-
-        else { // the sentence we are going to get is NOT what we want
-
-            want_idx = 0; // reset index
-            while (Serial1.read() > ASCII_BOTTOM);
-            // eat anything until we get less than the lower end of ASCII's printable region
-        }
-       
-        if (want_idx == sizeof(want_kind)-1) { // we have the sentence we want
-            want_idx = 0; // reset index
-            Serial.print("----");
-
-            for (int i; i < 4; i++) {
-                raw_time[i] = Serial1.read() - ASCII_0; // fill array with next 4 chars, rawtime
-            }            
-        }
-    }
-}
-
-//==============================
 // setup function, runs once
 //==============================
 void setup(){
@@ -114,20 +82,20 @@ void setup(){
 
     pinMode(pwm, OUTPUT); // pwm is output
 
-    pinMode(bcd_a, OUTPUT);
+    pinMode(bcd_a, OUTPUT); // all bcd pins as output
     pinMode(bcd_b, OUTPUT);
     pinMode(bcd_c, OUTPUT);
-    pinMode(bcd_d, OUTPUT); // all bcd pins as output
+    pinMode(bcd_d, OUTPUT); 
 
-    pinMode(h10mux, OUTPUT);
+    pinMode(h10mux, OUTPUT); // all mux pins are output
     pinMode(h00mux, OUTPUT);
     pinMode(m10mux, OUTPUT);
-    pinMode(m00mux, OUTPUT); // all mux pins are output
+    pinMode(m00mux, OUTPUT); 
 
-    pinMode(brightup, INPUT_PULLUP);
+    pinMode(brightup, INPUT_PULLUP); // UI pins are input, pulled high
     pinMode(brightdown, INPUT_PULLUP);
     pinMode(hourplus, INPUT_PULLUP);
-    pinMode(hourminus, INPUT_PULLUP); // UI pins are input, pulled high
+    pinMode(hourminus, INPUT_PULLUP); 
 
 
     TCCR1B = TCCR1B & 0b11111000 | 0x01 ; // set fuse for 31KHz frequency
@@ -137,6 +105,48 @@ void setup(){
     Serial1.begin(9600); // opens Serial1 port, sets data rate to 9600 bps
 
     Serial.begin(9600);
+}
+
+//==============================
+// grab_nmea looks for the desired sentence and sticks the raw time into array
+//==============================
+void grab_nmea() {
+
+    digitalWrite(led0, 1); //debug
+
+    want_idx = 0;
+
+    if (Serial1.available() > 15) {
+        Serial.print("we has serial! \n"); //debug
+
+        while(Serial1.available()) {
+
+            if (Serial1.read() == want_kind[want_idx]) { // if idx = 0, want_kind[idx] = $
+                Serial.print("good \n"); //debug
+                Serial.print(want_kind[idx]) //debug
+                want_idx++; // if we get $, we go on, looking for G, etc...
+            }
+
+            else { // the sentence we are going to get is NOT what we want
+
+                want_idx = 0; // reset index
+
+                while (Serial1.read() > ASCII_BOTTOM) {
+                    // eat anything until we get less than the lower end of ASCII's printable region
+                    Serial.print("bad \n"); //debug
+                }
+            }
+       
+            if (want_idx == sizeof(want_kind)-1) { // we have the sentence we want
+                want_idx = 0; // reset index
+                Serial.print("--------------");
+
+                for (int i; i < 4; i++) {
+                    raw_time[i] = Serial1.read() - ASCII_0; // fill array with next 4 chars, rawtime
+                }
+            }         
+        }
+    }
 }
 
 
@@ -199,7 +209,7 @@ void loop(){
 
     for (int x = 1; x < 20; x++) {
 
-        if (brightness > 1) { // only display if brightness >10, i.e display is on
+        if (brightness > BRIGHTMIN) { //only display if display is on
 
             dec_to_bcd(hours10); // send out binary of hours10 value on pins a-d
             digitalWrite(h10mux, 1); // turn on h10 tube
