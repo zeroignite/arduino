@@ -112,37 +112,49 @@ void setup(){
 //==============================
 void grab_nmea() {
 
-    digitalWrite(led0, 1); //debug
-
     want_idx = 0;
 
-    if (Serial1.available() > 15) {
-        Serial.print("we has serial! \n"); //debug
+    if (Serial1.available() > 50) {
+        //Serial.print("we has serial! \n"); //debug
+        //digitalWrite(led0, 1); //debug
 
         while(Serial1.available()) {
 
             if (Serial1.read() == want_kind[want_idx]) { // if idx = 0, want_kind[idx] = $
-                Serial.print("good \n"); //debug
-                Serial.print(want_kind[idx]) //debug
+                
+                //char testing_good = want_kind[want_idx]; //debug
+                //Serial.print(testing_good); //debug
+                //Serial.print("    ...good \n"); //debug
+
                 want_idx++; // if we get $, we go on, looking for G, etc...
             }
 
             else { // the sentence we are going to get is NOT what we want
+                
+                //char testing_bad = Serial1.read(); //debug
+                //Serial.print(testing_bad); //debug
+                //Serial.print("    ...bad \n"); //debug
 
                 want_idx = 0; // reset index
 
-                while (Serial1.read() > ASCII_BOTTOM) {
-                    // eat anything until we get less than the lower end of ASCII's printable region
-                    Serial.print("bad \n"); //debug
-                }
+
+                //while (Serial1.read() > ASCII_BOTTOM) {
+                    // eat anything until we get less than the lower end of ASCII's printable regions
+                    //Serial.print("bad \n"); //debug
+                //}
             }
        
             if (want_idx == sizeof(want_kind)-1) { // we have the sentence we want
                 want_idx = 0; // reset index
-                Serial.print("--------------");
+                //Serial.print("RMC found! Party time! \n");
 
-                for (int i; i < 4; i++) {
+                for (int i = 0; i < 4;) {
                     raw_time[i] = Serial1.read() - ASCII_0; // fill array with next 4 chars, rawtime
+                    
+                    Serial.print("filling time array..."); //debug
+                    Serial.print(raw_time[i]); //debug
+                    Serial.print("\n"); //debug
+                    i++;
                 }
             }         
         }
@@ -183,8 +195,8 @@ void loop(){
 
     workinghours = workinghours + timezone; // adjsut for timezone
 
-    hours10 = workinghours % 10; // get the tens value out of working hours
-    hours00 = workinghours / 10; // get the ones value out of working hours, int division
+    hours10 = workinghours / 10; // get the tens value out of working hours, int division
+    hours00 = workinghours % 10; // get the ones value out of working hours
 
     minutes10 = raw_time[2]; 
     minutes00 = raw_time[3];
