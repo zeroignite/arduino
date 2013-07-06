@@ -55,7 +55,7 @@ byte hours00 = 0; // hours value
 byte minutes10 = 0; // minutes-10 value
 byte minutes00 = 0; // minutes value
 
-byte timezone = 0; // timezone offset
+int timezone = 0; // timezone offset
 
 //==============================
 // initialize nmea input/parse stuff
@@ -155,13 +155,11 @@ void loop(){
     // pull individual times out of the raw_time array
     //===============================
 
-    byte workinghours = raw_time[0] * 10 + raw_time[1];
-    // the above line creates an int by pulling out the hours ints from array,
-    // turning them into ints, and adding them to produce 24H int. 
+    byte workinghours = raw_time[0] * 10 + raw_time[1]; //adds hours from raw_time array to get 24h
 
     workinghours = workinghours + timezone; // adjsut for timezone
 
-    if(workinghours  < 0) { //avoid negative time, rollover to before midnight
+    if(workinghours < 0) { //avoid negative time, rollover to before midnight
         workinghours = workinghours + 24;
     }
     else if(workinghours > 23) { //keep hours in range 0-23
@@ -252,8 +250,6 @@ void loop(){
     if (digitalRead(hourminus) == 0){
         timezone = timezone - 1;
     }
-
-    timezone == timezone + 1;
 
     if (timezone == 13){ //timezone rollover
         timezone = -12;
