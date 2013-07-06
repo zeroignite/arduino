@@ -50,12 +50,12 @@ float cycle = 2000; // time per numeral in microseconds
 // initialize time variables
 //=============================
 
-int hours10 = 0; // hours-10 value
-int hours00 = 0; // hours value
-int minutes10 = 0; // minutes-10 value
-int minutes00 = 0; // minutes value
+byte hours10 = 0; // hours-10 value
+byte hours00 = 0; // hours value
+byte minutes10 = 0; // minutes-10 value
+byte minutes00 = 0; // minutes value
 
-int timezone = 0; // timezone offset
+byte timezone = 0; // timezone offset
 
 //==============================
 // initialize nmea input/parse stuff
@@ -63,9 +63,9 @@ int timezone = 0; // timezone offset
 
 char want_kind[] = "$GPRMC,"; // the sentence we want is prefixed by $GPRMC,
 
-int want_idx = 0; // want_idx is index of what we're checking in Serial1 buffer
+byte want_idx = 0; // want_idx is index of what we're checking in Serial1 buffer
 
-int raw_time[4]; // array of raw time string
+byte raw_time[4]; // array of raw time string
 
 //==============================
 // setup function, runs once
@@ -118,7 +118,7 @@ void grab_nmea() {
         // we have the sentence we want, and there' enough serial left to get the time
             want_idx = 0; // reset index
 
-            for (int i = 0; i < 4;) {
+            for (byte i = 0; i < 4;) {
                 raw_time[i] = Serial1.read() - ASCII_0; // fill raw_time array with next 4 chars,
                 //subtracting ASCII_0 converts chars to ints
                 i++;
@@ -155,7 +155,7 @@ void loop(){
     // pull individual times out of the raw_time array
     //===============================
 
-    int workinghours = raw_time[0] * 10 + raw_time[1];
+    byte workinghours = raw_time[0] * 10 + raw_time[1];
     // the above line creates an int by pulling out the hours ints from array,
     // turning them into ints, and adding them to produce 24H int. 
 
@@ -164,8 +164,8 @@ void loop(){
     if(workinghours  < 0) { //avoid negative time, rollover to before midnight
         workinghours = workinghours + 24;
     }
-    else if(workinghours > 23) {
-        workinghours = 0;
+    else if(workinghours > 23) { //keep hours in range 0-23
+        workinghours = workinghours - 24; 
     }
 
     hours10 = workinghours / 10; // get the tens value out of working hours, int division
@@ -191,7 +191,7 @@ void loop(){
     float offtime = cycle - ontime; // calculate mux times from brightness
     // don't feed delayMicroseconds() 0 --- results in 17ms delay --- arduino bug
 
-    for (int x = 1; x < 20; x++) {
+    for (byte x = 1; x < 20; x++) {
 
         if (brightness > BRIGHTMIN) { //only display if display is on
 
