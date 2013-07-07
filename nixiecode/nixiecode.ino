@@ -67,7 +67,9 @@ byte hours00 = 0; // hours value
 byte minutes10 = 0; // minutes-10 value
 byte minutes00 = 0; // minutes value
 
-int timezone = 0; // timezone offset
+int timezone; // timezone offset
+
+byte timezone_saved; //timezone stored in EEPROM
 
 //==============================
 // initialize nmea input/parse stuff
@@ -84,7 +86,7 @@ byte raw_time[4]; // array of raw time string
 //==============================
 void setup(){
 
-    pinMode(led0, OUTPUT); 
+    pinMode(led0, OUTPUT); //onboard LED is useful for debug
 
     pinMode(pwm, OUTPUT); // pwm is output
 
@@ -103,12 +105,14 @@ void setup(){
     pinMode(hourplus, INPUT_PULLUP);
     pinMode(hourminus, INPUT_PULLUP); 
 
-
     TCCR1B = TCCR1B & 0b11111000 | 0x01 ; // set fuse for 31KHz frequency
     
     analogWrite(pwm, 168); // turn on the FET pwm
 
     Serial1.begin(9600); // opens Serial1 port, sets data rate to 9600 bps
+
+    timezone_saved = EEPROM.read(0); //pull saved timezone out of EEPROM
+    timezone = timezone_saved - 12; //converts 24 saved timezone to 12h timezone
 }
 
 //==============================
@@ -167,14 +171,14 @@ void loop(){
     // pull individual times out of the raw_time array
     //===============================
 
-    byte workinghours = raw_time[0] * 10 + raw_time[1]; //adds hours from raw_time array to get 24h
+    int workinghours = raw_time[0] * 10 + raw_time[1]; //adds hours from raw_time array to get 24h
 
     workinghours = workinghours + timezone; // adjsut for timezone
 
-    if(workinghours < 0) { //avoid negative time, rollover to before midnight
+    if (workinghours < 0) { //avoid negative time, rollover to before midnight
         workinghours = workinghours + 24;
     }
-    else if(workinghours > 23) { //keep hours in range 0-23
+    else if (workinghours > 23) { //keep hours in range 0-23
         workinghours = workinghours - 24; 
     }
 
@@ -269,6 +273,10 @@ void loop(){
 
     if (timezone == -13){
         timezone = 12;
-    }   
+    }  
+
+    if (timezone_saved - 12 != timezone){ //check to see if timezone has changed from save
+        EEPROM.write(0, timezone + 12); //if yes, convert to 24h offset and write
+    } 
 
 }
