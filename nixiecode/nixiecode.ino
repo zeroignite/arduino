@@ -29,7 +29,7 @@
 
 int led0 = 13; // pin 13 is arduino onborad LED
 
-int pwm = 9; // 9 is PWM pin, controls boost FET
+int pwm = 10; // PWM pin, controls boost FET
 
 int bcd_a = 2; // bcd pins --- a is least significant bit, d is most
 int bcd_b = 3;
