@@ -165,7 +165,9 @@ void dec_to_bcd(int decimal) { // takes an int 0-9 and puts binary out on corres
 //==================================
 void loop(){
 
-    grab_nmea(); // grab incoming nmea GPRMC sentence
+    if (Serial1.available() > 50){
+        grab_nmea(); // grab incoming nmea GPRMC sentence
+    }
 
     //===============================
     // pull individual times out of the raw_time array
