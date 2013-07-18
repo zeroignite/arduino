@@ -107,7 +107,7 @@ void setup(){
 
     TCCR1B = TCCR1B & 0b11111000 | 0x01 ; // set fuse for 31KHz frequency
     
-    analogWrite(pwm, 168); // turn on the FET pwm
+    analogWrite(pwm, 128); // turn on the FET pwm
 
     Serial1.begin(9600); // opens Serial1 port, sets data rate to 9600 bps
 
