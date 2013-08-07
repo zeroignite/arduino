@@ -41,8 +41,8 @@ int h00mux = 8;
 int m10mux = 11;
 int m00mux = 12;
 
-int brightup = A0; // input pins, UI
-int brightdown = A1;
+int brightdown = A0; // input pins, UI
+int brightup = A1;
 int hourplus = A2;
 int hourminus = A3; 
 
